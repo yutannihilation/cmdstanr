@@ -714,8 +714,8 @@ sample <- function(data = NULL,
                    term_buffer = NULL,
                    window = NULL,
                    fixed_param = FALSE,
-                   validate_csv = TRUE,
                    show_messages = TRUE,
+                   diagnostics = c("divergences", "max_treedepth", "ebfmi"),
                    # deprecated
                    cores = NULL,
                    num_cores = NULL,
@@ -724,7 +724,8 @@ sample <- function(data = NULL,
                    num_samples = NULL,
                    save_extra_diagnostics = NULL,
                    max_depth = NULL,
-                   stepsize = NULL) {
+                   stepsize = NULL,
+                   validate_csv = NULL) {
   # temporary deprecation warnings
   if (!is.null(cores)) {
     warning("'cores' is deprecated. Please use 'parallel_chains' instead.")
@@ -757,6 +758,15 @@ sample <- function(data = NULL,
   if (!is.null(save_extra_diagnostics)) {
     warning("'save_extra_diagnostics' is deprecated. Please use 'save_latent_dynamics' instead.")
     save_latent_dynamics <- save_extra_diagnostics
+  }
+  if (!is.null(validate_csv)) {
+    warning("'validate_csv' is deprecated. Please use 'diagnostics' instead.")
+    if (isFALSE(validate_csv)) {
+      diagnostics <- NULL
+    }
+    if (isTRUE(validate_csv)) {
+      diagnostics <- c("divergences", "max_treedepth", "ebfmi")
+    }
   }
 
   if (fixed_param) {
@@ -800,7 +810,7 @@ sample <- function(data = NULL,
     output_dir = output_dir,
     output_basename = output_basename,
     sig_figs = sig_figs,
-    validate_csv = validate_csv,
+    diagnostics = diagnostics,
     opencl_ids = assert_valid_opencl(opencl_ids, self$cpp_options())
   )
   runset <- CmdStanRun$new(args, procs)

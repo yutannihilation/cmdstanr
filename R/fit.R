@@ -826,16 +826,30 @@ CmdStanMCMC <- R6::R6Class(
         warning("No chains finished successfully. Unable to retrieve the fit.",
                 call. = FALSE)
       } else {
-        if (self$runset$args$validate_csv) {
-          fixed_param <- runset$args$method_args$fixed_param
-          private$read_csv_(variables = "",
-                           sampler_diagnostics = if (!fixed_param) c("treedepth__", "divergent__", "energy__") else "")
-          if (!fixed_param) {
-            check_divergences(private$sampler_diagnostics_)
-            check_sampler_transitions_treedepth(private$sampler_diagnostics_, private$metadata_)
-            check_bfmi(private$sampler_diagnostics_)
-          }
+        if (!runset$args$method_args$fixed_param &&
+            length(self$runset$args$diagnostics) > 0) {
+
         }
+        sampler_diagnostics_to_read <- c()
+        if ("divergences" %in% self$runset$args$diagnostics) {
+          sampler_diagnostics_to_read <- c(sampler_diagnostics_to_read, "divergent__")
+        }
+        if ("max_treedepth" %in% self$runset$args$diagnostics) {
+          sampler_diagnostics_to_read <- c(sampler_diagnostics_to_read, "treedepth__")
+        }
+        if ("ebfmi" %in% self$runset$args$diagnostics) {
+          sampler_diagnostics_to_read <- c(sampler_diagnostics_to_read, "energy__")
+        }
+        private$read_csv_(variables = "", sampler_diagnostics = sampler_diagnostics_to_read)
+        if ("divergences" %in% self$runset$args$diagnostics) {
+          check_divergences(private$sampler_diagnostics_)
+        }
+        if ("max_treedepth" %in% self$runset$args$diagnostics) {
+          check_sampler_transitions_treedepth(private$sampler_diagnostics_, private$metadata_)
+        }
+        if ("ebfmi" %in% self$runset$args$diagnostics) {
+          check_bfmi(private$sampler_diagnostics_)
+        }        
       }
     },
     # override the CmdStanFit output method

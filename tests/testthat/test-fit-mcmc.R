@@ -41,7 +41,7 @@ test_that("draws() stops for unkown variables", {
 test_that("draws() works when gradually adding variables", {
   skip_on_cran()
   fit <- testing_fit("logistic", method = "sample", refresh = 0,
-                     validate_csv = TRUE, save_warmup = TRUE)
+                     diagnostics = NULL, save_warmup = TRUE)
 
   draws_lp__ <- fit$draws(variables = c("lp__"), inc_warmup = TRUE)
   sampler_diagnostics <- fit$sampler_diagnostics(inc_warmup = TRUE)

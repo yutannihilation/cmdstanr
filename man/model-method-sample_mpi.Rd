@@ -212,11 +212,6 @@ values with 6 significant figures. The upper limit for \code{sig_figs} is 18.
 Increasing this value will result in larger output CSV files and thus an
 increased usage of disk space.}
 
-\item{validate_csv}{(logical) When \code{TRUE} (the default), validate the
-sampling results in the csv files. Disable if you wish to manually read in
-the sampling results and validate them yourself, for example using
-\code{\link[=read_cmdstan_csv]{read_cmdstan_csv()}}.}
-
 \item{show_messages}{(logical) When \code{TRUE} (the default), prints all
 informational messages, for example rejection of the current proposal.
 Disable if you wish silence these messages, but this is not recommended

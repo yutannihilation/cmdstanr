@@ -30,7 +30,7 @@ test_that("check_divergences() works", {
                           iter_sampling = 0,
                           iter_warmup = 10,
                           save_warmup = TRUE,
-                          validate_csv = FALSE)
+                          diagnostics = NULL)
   csv_output <- read_cmdstan_csv(fit_wramup_no_samples$output_files())
   expect_message(check_divergences(csv_output$post_warmup_sampler_diagnostics), regexp = NA)
 })

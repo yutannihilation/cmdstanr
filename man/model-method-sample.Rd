@@ -34,8 +34,8 @@ sample(
   term_buffer = NULL,
   window = NULL,
   fixed_param = FALSE,
-  validate_csv = TRUE,
   show_messages = TRUE,
+  diagnostics = c("divergences", "max_treedepth", "ebfmi"),
   cores = NULL,
   num_cores = NULL,
   num_chains = NULL,
@@ -43,7 +43,8 @@ sample(
   num_samples = NULL,
   save_extra_diagnostics = NULL,
   max_depth = NULL,
-  stepsize = NULL
+  stepsize = NULL,
+  validate_csv = NULL
 )
 }
 \arguments{
@@ -233,17 +234,18 @@ quantities block. If the parameters block is empty then using
 \code{fixed_param=TRUE} is mandatory. When \code{fixed_param=TRUE} the \code{chains} and
 \code{parallel_chains} arguments will be set to \code{1}.}
 
-\item{validate_csv}{(logical) When \code{TRUE} (the default), validate the
-sampling results in the csv files. Disable if you wish to manually read in
-the sampling results and validate them yourself, for example using
-\code{\link[=read_cmdstan_csv]{read_cmdstan_csv()}}.}
-
 \item{show_messages}{(logical) When \code{TRUE} (the default), prints all
 informational messages, for example rejection of the current proposal.
 Disable if you wish silence these messages, but this is not recommended
 unless you are very sure that the model is correct up to numerical error.
 If the messages are silenced then the \verb{$output()} method of the resulting
 fit object can be used to display all the silenced messages.}
+
+\item{diagnostics}{(vector) A vector of diagnostic checks to run after
+sampling finishes. The default value is \code{c("divergences", "max_treedepth", "ebfmi")}
+which means that diagnostic checks will check for divergent transitions,
+the number of transitions hit the maximum treedepth limit and if the estimated
+Bayesian fraction missing information(E-BFMI) was less than 0.3 fo any chain.}
 
 \item{cores, num_cores, num_chains, num_warmup, num_samples, save_extra_diagnostics, max_depth, stepsize}{Deprecated and will be removed in a future release.}
 }

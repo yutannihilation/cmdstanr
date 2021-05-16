@@ -25,10 +25,11 @@
 #'   If the messages are silenced then the `$output()` method of the resulting
 #'   fit object can be used to display all the silenced messages.
 #'
-#' @param validate_csv (logical) When `TRUE` (the default), validate the
-#'   sampling results in the csv files. Disable if you wish to manually read in
-#'   the sampling results and validate them yourself, for example using
-#'   [read_cmdstan_csv()].
+#' @param diagnostics (vector) A vector of diagnostic checks to run after
+#'   sampling finishes. The default value is `c("divergences", "max_treedepth", "ebfmi")`
+#'   which means that diagnostic checks will check for divergent transitions, 
+#'   the number of transitions hit the maximum treedepth limit and if the estimated
+#'   Bayesian fraction missing information(E-BFMI) was less than 0.3 fo any chain.
 #'
 #' @param iter_sampling (positive integer) The number of post-warmup iterations
 #'   to run per chain. Note: in the CmdStan User's Guide this is referred to as

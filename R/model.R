@@ -133,8 +133,15 @@
 #' fit_optim_w_init_list$init()
 #' }
 #'
-cmdstan_model <- function(stan_file, compile = TRUE, ...) {
-  CmdStanModel$new(stan_file = stan_file, compile = compile, ...)
+cmdstan_model <- function(stan_file = NULL, exe_file = NULL, hpp_file = NULL, compile = TRUE, ...) {
+  if (is.null(stan_file) && is.null(exe_file) && is.null(hpp_file)) {
+    stop("Unable to create cmdstan model. None of the arguments 'stan_file', 'exe_file' and 'hpp_file' are defined!", call. = FALSE)
+  }
+  num_defined_file_args <- !is.null(stan_file) + !is.null(exe_file) + !is.null(hpp_file)
+  if (num_defined_file_args > 1) {
+    stop("Unable to create cmdstan model. Only one of the arguments 'stan_file', 'exe_file' and 'hpp_file' can be defined!", call. = FALSE)
+  }
+  CmdStanModel$new(stan_file = stan_file, exe_file = exe_file, hpp_file = hpp_file, compile = compile, ...)
 }
 
 
@@ -198,20 +205,35 @@ CmdStanModel <- R6::R6Class(
     precompile_include_paths_ = NULL
   ),
   public = list(
-    initialize = function(stan_file, compile, ...) {
+    initialize = function(stan_file = NULL, exe_file = NULL, hpp_file = NULL, compile, ...) {
       args <- list(...)
-      checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
-      checkmate::assert_flag(compile)
-      private$stan_file_ <- absolute_path(stan_file)
-      private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
-      private$precompile_cpp_options_ <- args$cpp_options %||% list()
-      private$precompile_stanc_options_ <- assert_valid_stanc_options(args$stanc_options) %||% list()
-      private$precompile_include_paths_ <- args$include_paths
-      private$dir_ <- args$dir
+      if (!is.null(exe_file)) {
+        ext <- if (os_is_windows()) ".exe" else ""
+        checkmate::assert_file_exists(exe_file, access = "r", extension = ext)
+        private$exe_file_ <- absolute_path(exe_file)
+        private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
+      } else {
+        if (!is.null(stan_file)) {
+          checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
+          private$stan_file_ <- absolute_path(stan_file)
+          private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
+        }      
+        if (!is.null(hpp_file)) {
+          checkmate::assert_file_exists(hpp_file, access = "r", extension = "hpp")
+          private$hpp_file_ <- absolute_path(hpp_file)
+          private$model_name_ <- sub(" ", "_", strip_ext(basename(private$hpp_file_)))
+        }      
+        checkmate::assert_flag(compile)
+        private$precompile_cpp_options_ <- args$cpp_options %||% list()
+        private$precompile_stanc_options_ <- assert_valid_stanc_options(args$stanc_options) %||% list()
+        private$precompile_include_paths_ <- args$include_paths
+        private$dir_ <- args$dir
 
-      if (compile) {
-        self$compile(...)
+        if (compile) {
+          self$compile(...)
+        }
       }
+      
       invisible(self)
     },
 

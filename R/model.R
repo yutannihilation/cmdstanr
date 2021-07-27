@@ -1413,20 +1413,21 @@ include_paths_stanc3_args <- function(include_paths = NULL) {
 }
 
 model_info <- function(exe_file) {
-  ret <- processx::run(
-    command = exe_file,
-    args = c("info"),
-    error_on_status = FALSE
-  )
   info <- NULL
-  if (ret$status == 0) {
-    info <- list()
-    info_raw <- strsplit(strsplit(ret$stdout, "\n")[[1]], "=")
-    for (key_val in info_raw) {
-      if (length(key_val) > 1) {
-        key_val <- trimws(key_val)
-        
-        info[[key_val[1]]] <- key_val[2]
+  if (cmdstan_version() > "2.26") {
+    ret <- processx::run(
+      command = exe_file,
+      args = c("info"),
+      error_on_status = FALSE
+    )
+    if (ret$status == 0) {
+      info <- list()
+      info_raw <- strsplit(strsplit(ret$stdout, "\n")[[1]], "=")
+      for (key_val in info_raw) {
+        if (length(key_val) > 1) {
+          key_val <- trimws(key_val)
+          info[[key_val[1]]] <- key_val[2]
+        }
       }
     }
   }

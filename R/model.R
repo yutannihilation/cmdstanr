@@ -202,7 +202,8 @@ CmdStanModel <- R6::R6Class(
     include_paths_ = NULL,
     precompile_cpp_options_ = NULL,
     precompile_stanc_options_ = NULL,
-    precompile_include_paths_ = NULL
+    precompile_include_paths_ = NULL,
+    info_ = NULL
   ),
   public = list(
     initialize = function(stan_file = NULL, exe_file = NULL, hpp_file = NULL, compile, ...) {
@@ -228,11 +229,12 @@ CmdStanModel <- R6::R6Class(
         private$precompile_stanc_options_ <- assert_valid_stanc_options(args$stanc_options) %||% list()
         private$precompile_include_paths_ <- args$include_paths
         private$dir_ <- args$dir
-
+        
         if (compile) {
           self$compile(...)
         }
       }
+      private$info_ <- model_info(private$exe_file_)
       
       invisible(self)
     },
@@ -1320,7 +1322,6 @@ diagnose_method <- function(data = NULL,
 CmdStanModel$set("public", name = "diagnose", value = diagnose_method)
 
 
-
 # internal ----------------------------------------------------------------
 
 assert_valid_opencl <- function(opencl_ids, cpp_options) {
@@ -1409,4 +1410,25 @@ include_paths_stanc3_args <- function(include_paths = NULL) {
     stancflags <- paste0(stancflags, include_paths_flag, include_paths)
   }
   stancflags
+}
+
+model_info <- function(exe_file) {
+  ret <- processx::run(
+    command = exe_file,
+    args = c("info"),
+    error_on_status = FALSE
+  )
+  info <- NULL
+  if (ret$status == 0) {
+    info <- list()
+    info_raw <- strsplit(strsplit(ret$stdout, "\n")[[1]], "=")
+    for (key_val in info_raw) {
+      if (length(key_val) > 1) {
+        key_val <- trimws(key_val)
+        
+        info[[key_val[1]]] <- key_val[2]
+      }
+    }
+  }
+  info
 }

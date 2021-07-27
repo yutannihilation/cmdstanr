@@ -325,24 +325,3 @@ maybe_convert_draws_format <- function(draws, format) {
     stop("Invalid draws format.", call. = FALSE)
   )
 }
-
-model_info <- function(exe_file) {
-  ret <- processx::run(
-    command = exe_file,
-    args = c("info"),
-    error_on_status = FALSE
-  )
-  info <- NULL
-  if (ret$status == 0) {
-    info <- list()
-    info_raw <- strsplit(strsplit(ret$stdout, "\n")[[1]], "=")
-    for (key_val in info_raw) {
-      if (length(key_val) > 1) {
-        key_val <- trimws(key_val)
-        
-        info[[key_val[1]]] <- key_val[2]
-      }
-    }
-  }
-  info
-}

@@ -213,32 +213,36 @@ CmdStanModel <- R6::R6Class(
         checkmate::assert_file_exists(exe_file, access = "r", extension = ext)
         private$exe_file_ <- absolute_path(exe_file)
         private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
+        private$info_ <- model_info(private$exe_file_)
       } else {
         if (!is.null(stan_file)) {
           checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
           private$stan_file_ <- absolute_path(stan_file)
           private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
-        }      
+        }
         if (!is.null(hpp_file)) {
           checkmate::assert_file_exists(hpp_file, access = "r", extension = "hpp")
           private$hpp_file_ <- absolute_path(hpp_file)
           private$model_name_ <- sub(" ", "_", strip_ext(basename(private$hpp_file_)))
-        }      
+        }
         checkmate::assert_flag(compile)
         private$precompile_cpp_options_ <- args$cpp_options %||% list()
         private$precompile_stanc_options_ <- assert_valid_stanc_options(args$stanc_options) %||% list()
         private$precompile_include_paths_ <- args$include_paths
         private$dir_ <- args$dir
-        
         if (compile) {
           self$compile(...)
+          private$info_ <- model_info(private$exe_file_)
         }
       }
-      private$info_ <- model_info(private$exe_file_)
-      
       invisible(self)
     },
-
+    info = function() {
+      if (is.null(private$info_)) {
+        stop("$info() can only be used once a model is compiled. Run $compile() and try again.", call. = FALSE))
+      }
+      private$info_
+    },
     code = function() {
       readLines(self$stan_file())
     },
@@ -1426,7 +1430,11 @@ model_info <- function(exe_file) {
       for (key_val in info_raw) {
         if (length(key_val) > 1) {
           key_val <- trimws(key_val)
-          info[[key_val[1]]] <- key_val[2]
+          val <- key_val[2]
+          if (!is.na(as.logical(val))) {
+            val <- as.logical(val)
+          }
+          info[[key_val[1]]] <- val
         }
       }
     }

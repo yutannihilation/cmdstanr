@@ -215,6 +215,12 @@ CmdStanModel <- R6::R6Class(
         private$exe_file_ <- absolute_path(exe_file)
         private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
         private$info_ <- model_info(private$exe_file_)
+        for (cpp_option_name in model_info_cpp_options()) {
+          if (private$info_[[cpp_option_name]]) {
+            private$cpp_options_[[cpp_option_name]] <- TRUE
+          }
+        }
+
       } else {
         if (!is.null(stan_file)) {
           checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
@@ -233,14 +239,13 @@ CmdStanModel <- R6::R6Class(
         private$dir_ <- args$dir
         if (compile) {
           self$compile(...)
-          private$info_ <- model_info(private$exe_file_)
         }
       }
       invisible(self)
     },
     info = function() {
       if (is.null(private$info_)) {
-        stop("$info() can only be used once a model is compiled. Run $compile() and try again.", call. = FALSE))
+        stop("$info() can only be used once a model is compiled. Run $compile() and try again.", call. = FALSE)
       }
       private$info_
     },
@@ -552,6 +557,12 @@ compile <- function(quiet = TRUE,
   private$precompile_cpp_options_ <- NULL
   private$precompile_stanc_options_ <- NULL
   private$precompile_include_paths_ <- NULL
+  private$info_ <- model_info(private$exe_file_)
+  for (cpp_option_name in model_info_cpp_options()) {
+    if (private$info_[[cpp_option_name]]) {
+      private$cpp_options_[[cpp_option_name]] <- TRUE
+    }
+  }
   invisible(self)
 }
 CmdStanModel$set("public", name = "compile", value = compile)
@@ -1459,9 +1470,17 @@ include_paths_stanc3_args <- function(include_paths = NULL) {
   stancflags
 }
 
+model_info_cpp_options <- function(){
+  if (cmdstan_version() > "2.26.1") {
+    c("STAN_THREADS", "STAN_MPI", "STAN_OPENCL", "STAN_NO_RANGE_CHECKS", "STAN_CPP_OPTIMS")
+  } else {
+    NULL
+  }
+}
+
 model_info <- function(exe_file) {
   info <- NULL
-  if (cmdstan_version() > "2.26") {
+  if (cmdstan_version() > "2.26.1") {
     ret <- processx::run(
       command = exe_file,
       args = c("info"),

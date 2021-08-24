@@ -464,97 +464,91 @@ compile <- function(quiet = TRUE,
     if (interactive()) {
       message("Model executable is up to date!")
     }
-    private$cpp_options_ <- cpp_options
-    private$precompile_cpp_options_ <- NULL
-    private$precompile_stanc_options_ <- NULL
-    private$precompile_include_paths_ <- NULL
-    self$exe_file(exe)
-    return(invisible(self))
   } else {
     if (interactive()) {
       message("Compiling Stan program...")
     }
-  }
 
-  temp_stan_file <- tempfile(pattern = "model-", fileext = ".stan")
-  file.copy(self$stan_file(), temp_stan_file, overwrite = TRUE)
-  temp_file_no_ext <- strip_ext(temp_stan_file)
-  tmp_exe <- cmdstan_ext(temp_file_no_ext) # adds .exe on Windows
-  if (os_is_windows()) {
-    tmp_exe <- utils::shortPathName(tmp_exe)
-  }
-  private$hpp_file_ <- paste0(temp_file_no_ext, ".hpp")
-
-  # add path to the TBB library to the PATH variable to avoid copying the dll file
-  if (cmdstan_version() >= "2.21" && os_is_windows()) {
-    path_to_TBB <- file.path(cmdstan_path(), "stan", "lib", "stan_math", "lib", "tbb")
-    current_path <- Sys.getenv("PATH")
-    if (!grepl(path_to_TBB, current_path, perl = TRUE)) {
-      Sys.setenv(PATH = paste0(path_to_TBB, ";", Sys.getenv("PATH")))
+    temp_stan_file <- tempfile(pattern = "model-", fileext = ".stan")
+    file.copy(self$stan_file(), temp_stan_file, overwrite = TRUE)
+    temp_file_no_ext <- strip_ext(temp_stan_file)
+    tmp_exe <- cmdstan_ext(temp_file_no_ext) # adds .exe on Windows
+    if (os_is_windows()) {
+      tmp_exe <- utils::shortPathName(tmp_exe)
     }
-  }
+    private$hpp_file_ <- paste0(temp_file_no_ext, ".hpp")
 
-  stancflags_val <- include_paths_stanc3_args(include_paths)
-
-  if (pedantic) {
-    stanc_options[["warn-pedantic"]] <- TRUE
-  }
-
-  if (isTRUE(cpp_options$stan_opencl)) {
-    stanc_options[["use-opencl"]] <- TRUE
-  }
-  if (is.null(stanc_options[["name"]])) {
-    stanc_options[["name"]] <- paste0(self$model_name(), "_model")
-  }
-  stanc_built_options <- c()
-  for (i in seq_len(length(stanc_options))) {
-    option_name <- names(stanc_options)[i]
-    if (isTRUE(as.logical(stanc_options[[i]]))) {
-      stanc_built_options <- c(stanc_built_options, paste0("--", option_name))
-    } else if (is.null(option_name) || !nzchar(option_name)) {
-      stanc_built_options <- c(stanc_built_options, paste0("--", stanc_options[[i]]))
-    } else {
-      stanc_built_options <- c(stanc_built_options, paste0("--", option_name, "=", "'", stanc_options[[i]], "'"))
+    # add path to the TBB library to the PATH variable to avoid copying the dll file
+    if (cmdstan_version() >= "2.21" && os_is_windows()) {
+      path_to_TBB <- file.path(cmdstan_path(), "stan", "lib", "stan_math", "lib", "tbb")
+      current_path <- Sys.getenv("PATH")
+      if (!grepl(path_to_TBB, current_path, perl = TRUE)) {
+        Sys.setenv(PATH = paste0(path_to_TBB, ";", Sys.getenv("PATH")))
+      }
     }
-  }
-  stancflags_val <- paste0("STANCFLAGS += ", stancflags_val, paste0(" ", stanc_built_options, collapse = " "))
-  run_log <- processx::run(
-    command = make_cmd(),
-    args = c(tmp_exe,
-             cpp_options_to_compile_flags(cpp_options),
-             stancflags_val),
-    wd = cmdstan_path(),
-    echo = !quiet || is_verbose_mode(),
-    echo_cmd = is_verbose_mode(),
-    spinner = quiet && interactive(),
-    stderr_callback = function(x, p) {
-      if (!startsWith(x, paste0(make_cmd(), ": *** No rule to make target"))) {
-        message(x)
-      }
-      if (grepl("PCH file", x)) {
-        warning(
-          "CmdStan's precompiled header (PCH) files may need to be rebuilt.\n",
-          "If your model failed to compile please run rebuild_cmdstan().\n",
-          "If the issue persists please open a bug report.",
-          call. = FALSE
-        )
-      }
-      if (grepl("No space left on device", x) || grepl("error in backend: IO failure on output stream", x)) {
-        warning(
-          "The C++ compiler ran out of disk space and was unable to build the executables for your model!\n",
-          "See the above error for more details.",
-          call. = FALSE
-        )
-      }
-    },
-    error_on_status = FALSE
-  )
-  if (run_log$status != 0) {
-    stop("An error occured during compilation! See the message above for more information.",
-         call. = FALSE)
-  }
 
-  file.copy(tmp_exe, exe, overwrite = TRUE)
+    stancflags_val <- include_paths_stanc3_args(include_paths)
+
+    if (pedantic) {
+      stanc_options[["warn-pedantic"]] <- TRUE
+    }
+
+    if (isTRUE(cpp_options$stan_opencl)) {
+      stanc_options[["use-opencl"]] <- TRUE
+    }
+    if (is.null(stanc_options[["name"]])) {
+      stanc_options[["name"]] <- paste0(self$model_name(), "_model")
+    }
+    stanc_built_options <- c()
+    for (i in seq_len(length(stanc_options))) {
+      option_name <- names(stanc_options)[i]
+      if (isTRUE(as.logical(stanc_options[[i]]))) {
+        stanc_built_options <- c(stanc_built_options, paste0("--", option_name))
+      } else if (is.null(option_name) || !nzchar(option_name)) {
+        stanc_built_options <- c(stanc_built_options, paste0("--", stanc_options[[i]]))
+      } else {
+        stanc_built_options <- c(stanc_built_options, paste0("--", option_name, "=", "'", stanc_options[[i]], "'"))
+      }
+    }
+    stancflags_val <- paste0("STANCFLAGS += ", stancflags_val, paste0(" ", stanc_built_options, collapse = " "))
+    run_log <- processx::run(
+      command = make_cmd(),
+      args = c(tmp_exe,
+              cpp_options_to_compile_flags(cpp_options),
+              stancflags_val),
+      wd = cmdstan_path(),
+      echo = !quiet || is_verbose_mode(),
+      echo_cmd = is_verbose_mode(),
+      spinner = quiet && interactive(),
+      stderr_callback = function(x, p) {
+        if (!startsWith(x, paste0(make_cmd(), ": *** No rule to make target"))) {
+          message(x)
+        }
+        if (grepl("PCH file", x)) {
+          warning(
+            "CmdStan's precompiled header (PCH) files may need to be rebuilt.\n",
+            "If your model failed to compile please run rebuild_cmdstan().\n",
+            "If the issue persists please open a bug report.",
+            call. = FALSE
+          )
+        }
+        if (grepl("No space left on device", x) || grepl("error in backend: IO failure on output stream", x)) {
+          warning(
+            "The C++ compiler ran out of disk space and was unable to build the executables for your model!\n",
+            "See the above error for more details.",
+            call. = FALSE
+          )
+        }
+      },
+      error_on_status = FALSE
+    )
+    if (run_log$status != 0) {
+      stop("An error occured during compilation! See the message above for more information.",
+          call. = FALSE)
+    }
+
+    file.copy(tmp_exe, exe, overwrite = TRUE)
+  }
   private$exe_file_ <- exe
   private$cpp_options_ <- cpp_options
   private$precompile_cpp_options_ <- NULL

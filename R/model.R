@@ -244,6 +244,9 @@ CmdStanModel <- R6::R6Class(
       invisible(self)
     },
     info = function() {
+      if (cmdstan_version() < "2.27.0") {
+        stop("$info() is only supported with CmdStan 2.27 and newer.", call. = FALSE)
+      }
       if (is.null(private$info_)) {
         stop("$info() can only be used once a model is compiled. Run $compile() and try again.", call. = FALSE)
       }

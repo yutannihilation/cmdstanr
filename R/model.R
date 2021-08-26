@@ -852,6 +852,7 @@ sample <- function(data = NULL,
   )
   args <- CmdStanArgs$new(
     method_args = sample_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = checkmate::assert_integerish(chain_ids, lower = 1, len = chains, unique = TRUE, null.ok = FALSE),
@@ -987,6 +988,7 @@ sample_mpi <- function(data = NULL,
   )
   args <- CmdStanArgs$new(
     method_args = sample_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = checkmate::assert_integerish(chain_ids, lower = 1, len = chains, unique = TRUE, null.ok = FALSE),
@@ -1092,6 +1094,7 @@ optimize <- function(data = NULL,
   )
   args <- CmdStanArgs$new(
     method_args = optimize_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = 1,
@@ -1202,6 +1205,7 @@ variational <- function(data = NULL,
   )
   args <- CmdStanArgs$new(
     method_args = variational_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = 1,
@@ -1304,6 +1308,7 @@ generate_quantities <- function(fitted_params,
   gq_args <- GenerateQuantitiesArgs$new(fitted_params = fitted_params_files)
   args <- CmdStanArgs$new(
     method_args = gq_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = seq_along(fitted_params_files),
@@ -1360,6 +1365,7 @@ diagnose_method <- function(data = NULL,
   )
   args <- CmdStanArgs$new(
     method_args = diagnose_args,
+    stan_file = self$stan_file(),
     model_name = self$model_name(),
     exe_file = self$exe_file(),
     proc_ids = 1,

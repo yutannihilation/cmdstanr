@@ -1389,8 +1389,7 @@ CmdStanModel$set("public", name = "diagnose", value = diagnose_method)
 # internal ----------------------------------------------------------------
 
 assert_valid_opencl <- function(opencl_ids, cpp_options) {
-  if (is.null(cpp_options[["stan_opencl"]] || is.null(cpp_options[["STAN_OPENCL"]])
-      && !is.null(opencl_ids)) {
+  if (is.null(cpp_options[["stan_opencl"]]) && is.null(cpp_options[["STAN_OPENCL"]]) && !is.null(opencl_ids)) {
     stop("'opencl_ids' is set but the model was not compiled with for use with OpenCL.",
          "\nRecompile the model with 'cpp_options = list(stan_opencl = TRUE)'",
          call. = FALSE)
@@ -1402,16 +1401,14 @@ assert_valid_threads <- function(threads, cpp_options, multiple_chains = FALSE) 
   threads_arg <- if (multiple_chains) "threads_per_chain" else "threads"
   checkmate::assert_integerish(threads, .var.name = threads_arg,
                                null.ok = TRUE, lower = 1, len = 1)
-  if (is.null(cpp_options[["stan_threads"]]) || is.null(cpp_options[["STAN_THREADS"]])) {
-    if (!is.null(threads)) {
-      warning(
-        "'", threads_arg, "' is set but the model was not compiled with ",
-        "'cpp_options = list(stan_threads = TRUE)' ",
-        "so '", threads_arg, "' will have no effect!",
-        call. = FALSE
-      )
-      threads <- NULL
-    }
+  if (is.null(cpp_options[["stan_threads"]]) && is.null(cpp_options[["STAN_THREADS"]]) && !is.null(threads)) {
+    warning(
+      "'", threads_arg, "' is set but the model was not compiled with ",
+      "'cpp_options = list(stan_threads = TRUE)' ",
+      "so '", threads_arg, "' will have no effect!",
+      call. = FALSE
+    )
+    threads <- NULL
   } else {
     if (is.null(threads)) {
       stop(
@@ -1478,7 +1475,7 @@ include_paths_stanc3_args <- function(include_paths = NULL) {
 
 model_info_cpp_options <- function(){
   if (cmdstan_version() > "2.26.1") {
-    c("STAN_THREADS", "STAN_MPI", "STAN_OPENCL", "STAN_NO_RANGE_CHECKS", "STAN_CPP_OPTIMS")
+    c("stan_threads", "stan_mpi", "stan_opencl", "stan_no_range_checks", "stan_cpp_optims")
   } else {
     NULL
   }
@@ -1502,7 +1499,7 @@ model_info <- function(exe_file) {
           if (!is.na(as.logical(val))) {
             val <- as.logical(val)
           }
-          info[[key_val[1]]] <- val
+          info[[tolower(key_val[1])]] <- val
         }
       }
     }

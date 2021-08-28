@@ -214,13 +214,14 @@ CmdStanModel <- R6::R6Class(
         checkmate::assert_file_exists(exe_file, access = "r", extension = ext)
         private$exe_file_ <- absolute_path(exe_file)
         private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
-        private$info_ <- model_info(private$exe_file_)
-        for (cpp_option_name in model_info_cpp_options()) {
-          if (private$info_[[cpp_option_name]]) {
-            private$cpp_options_[[cpp_option_name]] <- TRUE
+        if (cmdstan_version() > "2.26.1") {
+          private$info_ <- model_info(private$exe_file_)
+          for (cpp_option_name in model_info_cpp_options()) {
+            if (private$info_[[cpp_option_name]]) {
+              private$cpp_options_[[cpp_option_name]] <- TRUE
+            }
           }
         }
-
       } else {
         if (!is.null(stan_file)) {
           checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
@@ -554,10 +555,12 @@ compile <- function(quiet = TRUE,
   private$precompile_cpp_options_ <- NULL
   private$precompile_stanc_options_ <- NULL
   private$precompile_include_paths_ <- NULL
-  private$info_ <- model_info(private$exe_file_)
-  for (cpp_option_name in model_info_cpp_options()) {
-    if (private$info_[[cpp_option_name]]) {
-      private$cpp_options_[[cpp_option_name]] <- TRUE
+  if (cmdstan_version() > "2.26.1") {
+    private$info_ <- model_info(private$exe_file_)
+    for (cpp_option_name in model_info_cpp_options()) {
+      if (private$info_[[cpp_option_name]]) {
+        private$cpp_options_[[cpp_option_name]] <- TRUE
+      }
     }
   }
   invisible(self)
@@ -1386,7 +1389,7 @@ CmdStanModel$set("public", name = "diagnose", value = diagnose_method)
 # internal ----------------------------------------------------------------
 
 assert_valid_opencl <- function(opencl_ids, cpp_options) {
-  if (is.null(cpp_options[["stan_opencl"]])
+  if (is.null(cpp_options[["stan_opencl"]] || is.null(cpp_options[["STAN_OPENCL"]])
       && !is.null(opencl_ids)) {
     stop("'opencl_ids' is set but the model was not compiled with for use with OpenCL.",
          "\nRecompile the model with 'cpp_options = list(stan_opencl = TRUE)'",
@@ -1399,7 +1402,7 @@ assert_valid_threads <- function(threads, cpp_options, multiple_chains = FALSE) 
   threads_arg <- if (multiple_chains) "threads_per_chain" else "threads"
   checkmate::assert_integerish(threads, .var.name = threads_arg,
                                null.ok = TRUE, lower = 1, len = 1)
-  if (is.null(cpp_options[["stan_threads"]])) {
+  if (is.null(cpp_options[["stan_threads"]]) || is.null(cpp_options[["STAN_THREADS"]])) {
     if (!is.null(threads)) {
       warning(
         "'", threads_arg, "' is set but the model was not compiled with ",

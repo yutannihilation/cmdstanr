@@ -227,8 +227,7 @@ CmdStanModel <- R6::R6Class(
           checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
           private$stan_file_ <- absolute_path(stan_file)
           private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
-        }
-        if (!is.null(hpp_file)) {
+        } else if (!is.null(hpp_file)) {
           checkmate::assert_file_exists(hpp_file, access = "r", extension = "hpp")
           private$hpp_file_ <- absolute_path(hpp_file)
           private$model_name_ <- sub(" ", "_", strip_ext(basename(private$hpp_file_)))
@@ -469,15 +468,20 @@ compile <- function(quiet = TRUE,
     if (interactive()) {
       message("Compiling Stan program...")
     }
-
-    temp_stan_file <- tempfile(pattern = "model-", fileext = ".stan")
-    file.copy(self$stan_file(), temp_stan_file, overwrite = TRUE)
-    temp_file_no_ext <- strip_ext(temp_stan_file)
+    
+    
+    if (length(private$stan_file_) > 0) {
+      temp_stan_file <- tempfile(pattern = "model-", fileext = ".stan")
+      file.copy(self$stan_file(), temp_stan_file, overwrite = TRUE)
+      temp_file_no_ext <- strip_ext(temp_stan_file)
+      private$hpp_file_ <- paste0(temp_file_no_ext, ".hpp")
+    } else {
+      temp_file_no_ext <- strip_ext(private$hpp_file_)
+    }    
     tmp_exe <- cmdstan_ext(temp_file_no_ext) # adds .exe on Windows
     if (os_is_windows()) {
       tmp_exe <- utils::shortPathName(tmp_exe)
     }
-    private$hpp_file_ <- paste0(temp_file_no_ext, ".hpp")
 
     # add path to the TBB library to the PATH variable to avoid copying the dll file
     if (cmdstan_version() >= "2.21" && os_is_windows()) {

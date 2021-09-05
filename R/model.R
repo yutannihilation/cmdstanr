@@ -7,6 +7,7 @@
 #' @param stan_file (string) The path to a `.stan` file containing a Stan
 #'   program. The helper function [write_stan_file()] is provided for cases when
 #'   it is more convenient to specify the Stan program as a string.
+#' @param exe_file (string) The path to an existing Stan model executable.
 #' @param compile (logical) Do compilation? The default is `TRUE`. If `FALSE`
 #'   compilation can be done later via the [`$compile()`][model-method-compile]
 #'   method.
@@ -133,15 +134,8 @@
 #' fit_optim_w_init_list$init()
 #' }
 #'
-cmdstan_model <- function(stan_file = NULL, exe_file = NULL, hpp_file = NULL, compile = TRUE, ...) {
-  if (is.null(stan_file) && is.null(exe_file) && is.null(hpp_file)) {
-    stop("Unable to create cmdstan model. None of the arguments 'stan_file', 'exe_file' and 'hpp_file' are defined!", call. = FALSE)
-  }
-  num_defined_file_args <- !is.null(stan_file) + !is.null(exe_file) + !is.null(hpp_file)
-  if (num_defined_file_args > 1) {
-    stop("Unable to create cmdstan model. Only one of the arguments 'stan_file', 'exe_file' and 'hpp_file' can be defined!", call. = FALSE)
-  }
-  CmdStanModel$new(stan_file = stan_file, exe_file = exe_file, hpp_file = hpp_file, compile = compile, ...)
+cmdstan_model <- function(stan_file = NULL, exe_file = NULL, compile = TRUE, ...) {
+  CmdStanModel$new(stan_file = stan_file, exe_file = exe_file, compile = compile, ...)
 }
 
 
@@ -207,31 +201,22 @@ CmdStanModel <- R6::R6Class(
     variables_ = NULL
   ),
   public = list(
-    initialize = function(stan_file = NULL, exe_file = NULL, hpp_file = NULL, compile, ...) {
+    initialize = function(stan_file = NULL, exe_file = NULL, compile, ...) {
       args <- list(...)
+      if (!is.null(stan_file)) {
+        checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
+        private$stan_file_ <- absolute_path(stan_file)
+        private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
+      }
       if (!is.null(exe_file)) {
         ext <- if (os_is_windows()) ".exe" else ""
         checkmate::assert_file_exists(exe_file, access = "r", extension = ext)
         private$exe_file_ <- absolute_path(exe_file)
-        private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
-        if (cmdstan_version() > "2.26.1") {
-          private$info_ <- model_info(private$exe_file_)
-          for (cpp_option_name in model_info_cpp_options()) {
-            if (private$info_[[cpp_option_name]]) {
-              private$cpp_options_[[cpp_option_name]] <- TRUE
-            }
-          }
+        if (is.null(stan_file)) {
+          private$model_name_ <- sub(" ", "_", strip_ext(basename(private$exe_file_)))
         }
-      } else {
-        if (!is.null(stan_file)) {
-          checkmate::assert_file_exists(stan_file, access = "r", extension = "stan")
-          private$stan_file_ <- absolute_path(stan_file)
-          private$model_name_ <- sub(" ", "_", strip_ext(basename(private$stan_file_)))
-        } else if (!is.null(hpp_file)) {
-          checkmate::assert_file_exists(hpp_file, access = "r", extension = "hpp")
-          private$hpp_file_ <- absolute_path(hpp_file)
-          private$model_name_ <- sub(" ", "_", strip_ext(basename(private$hpp_file_)))
-        }
+      }
+      if (!is.null(stan_file)) { 
         checkmate::assert_flag(compile)
         private$precompile_cpp_options_ <- args$cpp_options %||% list()
         private$precompile_stanc_options_ <- assert_valid_stanc_options(args$stanc_options) %||% list()
@@ -239,6 +224,14 @@ CmdStanModel <- R6::R6Class(
         private$dir_ <- args$dir
         if (compile) {
           self$compile(...)
+        }
+      }
+      if ((!is.null(exe_file) || (!is.null(stan_file) && compile)) && cmdstan_version() > "2.26.1") {
+        private$info_ <- model_info(private$exe_file_)
+        for (cpp_option_name in model_info_cpp_options()) {
+          if (private$info_[[cpp_option_name]]) {
+            private$cpp_options_[[cpp_option_name]] <- TRUE
+          }
         }
       }
       invisible(self)
@@ -551,7 +544,6 @@ compile <- function(quiet = TRUE,
       stop("An error occured during compilation! See the message above for more information.",
           call. = FALSE)
     }
-
     file.copy(tmp_exe, exe, overwrite = TRUE)
   }
   private$exe_file_ <- exe
@@ -719,7 +711,7 @@ check_syntax <- function(pedantic = FALSE,
     },
     error_on_status = FALSE
   )
-  if (run_log$status != 0) {
+  if (is.na(run_log$status) || run_log$status != 0) {
     stop("Syntax error found! See the message above for more information.",
          call. = FALSE)
   }

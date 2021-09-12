@@ -1413,14 +1413,12 @@ assert_valid_threads <- function(threads, cpp_options, multiple_chains = FALSE) 
       call. = FALSE
     )
     threads <- NULL
-  } else {
-    if (is.null(threads)) {
-      stop(
-        "The model was compiled with 'cpp_options = list(stan_threads = TRUE)' ",
-        "but '", threads_arg, "' was not set!",
-        call. = FALSE
-      )
-    }
+  } else if (is.null(threads) && (!is.null(cpp_options[["stan_threads"]]) || !is.null(cpp_options[["STAN_THREADS"]]))) {
+    stop(
+      "The model was compiled with 'cpp_options = list(stan_threads = TRUE)' ",
+      "but '", threads_arg, "' was not set!",
+      call. = FALSE
+    )
   }
   invisible(threads)
 }

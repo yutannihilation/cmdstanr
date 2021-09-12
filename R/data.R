@@ -162,7 +162,8 @@ process_data <- function(data, stan_file = NULL) {
         call. = FALSE
       )
     }
-    if (cmdstan_version() >= "2.27.0" && !is.null(stan_file)) {
+    process_variables <- cmdstan_version() >= "2.27.0" && !is.null(stan_file) && length(stan_file) > 0
+    if (process_variables) {
       stan_file <- absolute_path(stan_file)
       if (file.exists(stan_file)) {
         data_variables <- model_variables(stan_file)$data
@@ -192,7 +193,7 @@ process_data <- function(data, stan_file = NULL) {
       }
     }
     path <- tempfile(pattern = "standata-", fileext = ".json")
-    write_stan_json(data = data, file = path, always_decimal = (cmdstan_version() > "2.26.1"))
+    write_stan_json(data = data, file = path, always_decimal = process_variables)
   } else {
     stop("'data' should be a path or a named list.", call. = FALSE)
   }

@@ -826,7 +826,8 @@ sample <- function(data = NULL,
   }
 
   if (cmdstan_version() >= "2.27.0" && !fixed_param) {
-    if (length(self$variables()$parameters) == 0) {
+    variables <- self$variables()
+    if (!is.null(variables) && length(variables$parameters) == 0) {
       warning("Model contains no parameters. Automatically setting fixed_param = TRUE.")
       fixed_param <- TRUE
     }
@@ -1518,16 +1519,19 @@ model_variables <- function(stan_file) {
     echo = FALSE,
     echo_cmd = FALSE,
     stdout = out_file,
-    error_on_status = TRUE
+    error_on_status = FALSE
   )
-  variables <- jsonlite::read_json(out_file, na = "null")
-  variables$data <- variables$inputs
-  variables$inputs <- NULL
-  variables$transformed_parameters <- variables[["transformed parameters"]]
-  variables[["transformed parameters"]] <- NULL
-  variables$generated_quantities <- variables[["generated quantities"]]
-  variables[["generated quantities"]] <- NULL
-  variables$functions <- NULL
-  variables$distributions <- NULL
+  variables <- NULL
+  if (run_log$status == 0) {
+    variables <- jsonlite::read_json(out_file, na = "null")
+    variables$data <- variables$inputs
+    variables$inputs <- NULL
+    variables$transformed_parameters <- variables[["transformed parameters"]]
+    variables[["transformed parameters"]] <- NULL
+    variables$generated_quantities <- variables[["generated quantities"]]
+    variables[["generated quantities"]] <- NULL
+    variables$functions <- NULL
+    variables$distributions <- NULL
+  }  
   variables
 }

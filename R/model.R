@@ -7,7 +7,8 @@
 #' @param stan_file (string) The path to a `.stan` file containing a Stan
 #'   program. The helper function [write_stan_file()] is provided for cases when
 #'   it is more convenient to specify the Stan program as a string.
-#' @param exe_file (string) The path to an existing Stan model executable.
+#' @param exe_file (string) The path to an existing Stan model executable. This
+#'   argument can only be used with Cmdstan 2.27+.
 #' @param compile (logical) Do compilation? The default is `TRUE`. If `FALSE`
 #'   compilation can be done later via the [`$compile()`][model-method-compile]
 #'   method.
@@ -135,6 +136,9 @@
 #' }
 #'
 cmdstan_model <- function(stan_file = NULL, exe_file = NULL, compile = TRUE, ...) {
+  if (cmdstan_version() < "2.27.0" && !is.null(exe_file)) {
+    stop("The 'exe_file' argument is only supported with CmdStan 2.27 and newer.", call. = FALSE)
+  }
   CmdStanModel$new(stan_file = stan_file, exe_file = exe_file, compile = compile, ...)
 }
 
@@ -226,7 +230,7 @@ CmdStanModel <- R6::R6Class(
           self$compile(...)
         }
       }
-      if ((!is.null(exe_file) || (!is.null(stan_file) && compile)) && cmdstan_version() > "2.26.1") {
+      if ((!is.null(exe_file) || (!is.null(stan_file) && compile)) && cmdstan_version() >= "2.27.0") {
         private$info_ <- model_info(private$exe_file_)
         for (cpp_option_name in model_info_cpp_options()) {
           if (private$info_[[cpp_option_name]]) {

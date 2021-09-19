@@ -12,6 +12,7 @@
 #'   method.
 #' @param ... Optionally, additional arguments to pass to the
 #'   [`$compile()`][model-method-compile] method if `compile=TRUE`.
+#' @inheritParams model-method-compile
 #'
 #' @return A [`CmdStanModel`] object.
 #'
@@ -133,8 +134,8 @@
 #' fit_optim_w_init_list$init()
 #' }
 #'
-cmdstan_model <- function(stan_file, compile = TRUE, ...) {
-  CmdStanModel$new(stan_file = stan_file, compile = compile, ...)
+cmdstan_model <- function(stan_file, compile = TRUE, dir = NULL, ...) {
+  CmdStanModel$new(stan_file = stan_file, compile = compile, dir = dir, ...)
 }
 
 

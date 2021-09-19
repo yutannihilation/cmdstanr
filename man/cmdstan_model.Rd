@@ -4,7 +4,7 @@
 \alias{cmdstan_model}
 \title{Create a new CmdStanModel object}
 \usage{
-cmdstan_model(stan_file, compile = TRUE, ...)
+cmdstan_model(stan_file, compile = TRUE, dir = NULL, ...)
 }
 \arguments{
 \item{stan_file}{(string) The path to a \code{.stan} file containing a Stan
@@ -14,6 +14,10 @@ it is more convenient to specify the Stan program as a string.}
 \item{compile}{(logical) Do compilation? The default is \code{TRUE}. If \code{FALSE}
 compilation can be done later via the \code{\link[=model-method-compile]{$compile()}}
 method.}
+
+\item{dir}{(string) The path to the directory in which to store the CmdStan
+executable (or \code{.hpp} file if using \verb{$save_hpp_file()}). The default is the
+same location as the Stan program.}
 
 \item{...}{Optionally, additional arguments to pass to the
 \code{\link[=model-method-compile]{$compile()}} method if \code{compile=TRUE}.}
